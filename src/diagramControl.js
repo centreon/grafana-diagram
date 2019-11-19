@@ -62,6 +62,7 @@ const panelDefaults = {
     'C --> D\n',
   mode: 'content', //allowed values: 'content' and 'url'
   mermaidServiceUrl: '',
+  mermaidServiceKey: '',
   init: {
     logLevel: 3, //1:debug, 2:info, 3:warn, 4:error, 5:fatal
     cloneCssStyles: true, // - This options controls whether or not the css rules should be copied into the generated svg
@@ -353,10 +354,14 @@ class DiagramCtrl extends MetricsPanelCtrl {
       if (mode == 'url') {
         var templatedURL = this.templateSrv.replace(this.panel.mermaidServiceUrl, this.panel.scopedVars);
         var _this = this;
+        var key = this.panel.mermaidServiceKey;
         this.$http({
           method: 'GET',
           url: templatedURL,
-          headers: { 'Accept': 'text/x-mermaid,text/plain;q=0.9,*/*;q=0.8' }
+          headers: {
+            'Accept': 'text/x-mermaid,text/plain;q=0.9,*/*;q=0.8'
+            ,'x-api-key': this.panel.mermaidServiceKey
+          }
         }).then(function successCallback(response) {
           //the response must have text/plain content-type
           // clearing the diagram here will result in less artifacting waiting for the response

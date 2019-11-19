@@ -10,8 +10,14 @@
 	ng-model="ctrl.panel.mermaidServiceUrl" 
 	ng-change="ctrl.refresh()"
 	ng-model-onblur/>
+<label>Api key</label>
+<input type="text" 
+	style="width: 95%" 
+	ng-model="ctrl.panel.mermaidServiceKey" 
+	ng-change="ctrl.refresh()"
+	ng-model-onblur/>
 <label>
-<input type="radio" 
+	<input type="radio" 
 	ng-model="ctrl.panel.mode" 
 	ng-change="ctrl.refresh()"
 	value="content">Content</label>
