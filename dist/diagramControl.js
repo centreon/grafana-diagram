@@ -1,9 +1,9 @@
 'use strict';
 
-System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/core/time_series2', 'app/core/utils/kbn', 'app/plugins/sdk', './properties', 'lodash', './series_overrides_diagram_ctrl', './css/diagram.css!'], function (_export, _context) {
+System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/core/time_series2', 'app/core/utils/kbn', 'app/plugins/sdk', './properties', 'lodash', './series_overrides_diagram_ctrl', './diagramStyle'], function (_export, _context) {
   "use strict";
 
-  var mermaid, d3, TimeSeries, kbn, MetricsPanelCtrl, diagramEditor, displayEditor, compositeEditor, mappingEditor, _, _createClass, mermaidAPI, panelDefaults, DiagramCtrl;
+  var mermaid, d3, TimeSeries, kbn, MetricsPanelCtrl, diagramEditor, displayEditor, compositeEditor, mappingEditor, _, diagramStyleFormatter, _createClass, mermaidAPI, panelDefaults, DiagramCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -75,7 +75,9 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
       mappingEditor = _properties.mappingEditor;
     }, function (_lodash) {
       _ = _lodash.default;
-    }, function (_series_overrides_diagram_ctrl) {}, function (_cssDiagramCss) {}],
+    }, function (_series_overrides_diagram_ctrl) {}, function (_diagramStyle) {
+      diagramStyleFormatter = _diagramStyle.diagramStyleFormatter;
+    }],
     execute: function () {
       _createClass = function () {
         function defineProperties(target, props) {
@@ -104,6 +106,7 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
         thresholds: '0,10',
         decimals: 2, // decimal precision
         colors: ['rgba(50, 172, 45, 0.97)', 'rgba(237, 129, 40, 0.89)', 'rgba(245, 54, 54, 0.9)'],
+        styleValues: {},
         style: '',
         legend: {
           show: true,
@@ -135,7 +138,10 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
         mode: 'content', //allowed values: 'content' and 'url'
         mermaidServiceUrl: '',
         mermaidServiceKey: '',
+        themes: ['default', 'dark', 'forest', 'neutral'],
         init: {
+          theme: 'dark',
+          securityLevel: 'loose',
           logLevel: 3, //1:debug, 2:info, 3:warn, 4:error, 5:fatal
           cloneCssStyles: true, // - This options controls whether or not the css rules should be copied into the generated svg
           startOnLoad: false, // - This options controls whether or mermaid starts when the page loads
@@ -144,7 +150,7 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
             htmlLabels: true,
             useMaxWidth: true
           },
-          sequenceDiagram: {
+          sequence: {
             diagramMarginX: 50, // - margin to the right and left of the sequence diagram
             diagramMarginY: 10, // - margin to the over and under the sequence diagram
             actorMargin: 50, // - Margin between actors
@@ -222,6 +228,12 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
           value: function initializeMermaid() {
             mermaidAPI.initialize(this.panel.init);
             mermaidAPI.parseError = this.handleParseError.bind(this);
+          }
+        }, {
+          key: 'changeTheme',
+          value: function changeTheme() {
+            this.initializeMermaid();
+            this.updateDiagram(this.svgData);
           }
         }, {
           key: 'handleParseError',
@@ -440,10 +452,12 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
             var _this = this;
             var renderCallback = function renderCallback(svgCode, bindFunctions) {
               if (svgCode === '') {
-                diagramContainer.html('There was a problem rendering the graph');
+                diagramContainer.html('<p>There was a problem rendering the graph</p>');
               } else {
                 diagramContainer.html(svgCode);
-                bindFunctions(diagramContainer[0]);
+                if (bindFunctions) {
+                  bindFunctions(diagramContainer[0]);
+                }
                 console.debug("Inside rendercallback of renderDiagram");
                 // svgData is empty when this callback happens, update it so the styles will be applied
                 _this.svgData = data;
@@ -451,8 +465,13 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
                 _this.render();
               }
             };
-            // if parsing the graph definition fails, the error handler will be called but the renderCallback() may also still be called.
-            mermaidAPI.render(this.panel.graphId, graphDefinition, renderCallback);
+
+            try {
+              // if parsing the graph definition fails, the error handler will be called but the renderCallback() may also still be called.
+              mermaidAPI.render(this.panel.graphId, graphDefinition, renderCallback, diagramContainer[0]);
+            } catch (err) {
+              diagramContainer.html('<p>Error rendering diagram. Check the diagram definition</p><p>' + err + '</p>');
+            }
           }
         }, {
           key: 'updateDiagram',
@@ -468,7 +487,7 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
                   url: templatedURL,
                   headers: {
                     'Accept': 'text/x-mermaid,text/plain;q=0.9,*/*;q=0.8',
-                    'x-api-key': this.panel.mermaidServiceKey
+                    'x-api-key': key
                   }
                 }).then(function successCallback(response) {
                   //the response must have text/plain content-type
@@ -837,7 +856,7 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
               });
             }
 
-            function selectElementByAlias(container, alias) {
+            function selectDivElementByAlias(container, alias) {
               var targetElement = d3.select(container).selectAll('div').filter(function () {
                 return d3.select(this).text() == alias;
               });
@@ -851,19 +870,25 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
               return d3.select();
             }
 
+            function selectTextElementByAlias(container, alias) {
+              return d3.select(container).selectAll('text').filter(function () {
+                return d3.select(this).text() == alias;
+              });
+            }
+
             function styleD3Shapes(targetElement, seriesItem) {
               var shapes = targetElement.selectAll('rect,circle,polygon');
               shapes.style('fill', seriesItem.color);
 
               var div = targetElement.select('div');
-              var fo = targetElement.select('foreignObject');
               var p = div.append('p');
               p.classed('diagram-value', true);
               p.style('background-color', seriesItem.color);
               p.html(seriesItem.valueFormatted);
+              targetElement.select('foreignObject').attr('height', div.node().clientHeight);
             }
 
-            function styleEdgeLabel(targetElement, seriesItem) {
+            function styleFlowChartEdgeLabel(targetElement, seriesItem) {
               var edgeParent = d3.select(targetElement.node().parentNode);
               edgeParent.append('br');
               var v = edgeParent.append('span');
@@ -872,10 +897,27 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
               v.html(seriesItem.valueFormatted);
             }
 
+            function styleTextEdgeLabel(targetElement, seriesItem) {
+              targetElement.each(function () {
+                var el = this;
+                var markerBox = {
+                  x: el.getBBox().x,
+                  y: el.getBBox().y + el.getBBox().height + 10,
+                  width: el.getBBox().width,
+                  height: el.getBBox().height
+                };
+                var line = d3.select(el.parentNode).select('line');
+                d3.select(el.parentNode).insert("rect").style('fill', seriesItem.color).attr("x", markerBox.x).attr("y", markerBox.y).attr("width", markerBox.width).attr("height", markerBox.height);
+                d3.select(el.parentNode).insert("text").text(seriesItem.valueFormatted).attr("x", markerBox.x + markerBox.width / 2).attr("y", markerBox.y + markerBox.height - 1).attr("width", markerBox.width).attr("height", markerBox.height).style("text-anchor", "middle");
+              });
+            }
+
             function injectCustomStyle(ctrl) {
               var diagramDiv = d3.select(document.getElementById(ctrl.panel.graphId));
-              var styleElement = diagramDiv.append('style');
-              styleElement.text(ctrl.panel.style);
+              var diagramStyleElement = diagramDiv.append('style');
+              diagramStyleElement.text(diagramStyleFormatter(ctrl.panel.styleValues));
+              var customStyleElement = diagramDiv.append('style');
+              customStyleElement.text(ctrl.panel.style);
             }
 
             function updateStyle() {
@@ -904,13 +946,19 @@ System.register(['./libs/mermaid/dist/mermaid', './libs/d3/dist/d3.min', 'app/co
 
                 targetElement = selectElementByEdgeLabel(svg[0], key);
                 if (!targetElement.empty()) {
-                  styleEdgeLabel(targetElement, seriesItem);
+                  styleFlowChartEdgeLabel(targetElement, seriesItem);
                   continue;
                 }
 
-                targetElement = selectElementByAlias(svg[0], key);
+                targetElement = selectDivElementByAlias(svg[0], key);
                 if (!targetElement.empty()) {
                   styleD3Shapes(targetElement, seriesItem);
+                  continue;
+                }
+
+                targetElement = selectTextElementByAlias(svg[0], key);
+                if (!targetElement.empty()) {
+                  styleTextEdgeLabel(targetElement, seriesItem);
                   continue;
                 }
 
