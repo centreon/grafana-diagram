@@ -1,0 +1,4 @@
+.github/**          @centreon/owners-pipelines
+
+*.js                @centreon/owners-nodejs
+packag*.json        @centreon/owners-nodejs
