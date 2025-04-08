@@ -67,6 +67,7 @@ const panelDefaults = {
     'C --> D\n',
   mode: 'content', //allowed values: 'content' and 'url'
   mermaidServiceUrl: '',
+  mermaidServiceKey: '',
   themes: ['default', 'dark', 'forest', 'neutral'],
   init: {
     theme: 'dark',
@@ -373,10 +374,14 @@ class DiagramCtrl extends MetricsPanelCtrl {
       if (mode == 'url') {
         var templatedURL = this.templateSrv.replace(this.panel.mermaidServiceUrl, this.panel.scopedVars);
         var _this = this;
+        var key = this.panel.mermaidServiceKey;
         this.$http({
           method: 'GET',
           url: templatedURL,
-          headers: { 'Accept': 'text/x-mermaid,text/plain;q=0.9,*/*;q=0.8' }
+          headers: {
+            'Accept': 'text/x-mermaid,text/plain;q=0.9,*/*;q=0.8',
+            'x-api-key': key
+          }
         }).then(function successCallback(response) {
           //the response must have text/plain content-type
           // clearing the diagram here will result in less artifacting waiting for the response
