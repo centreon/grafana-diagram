@@ -2,3 +2,6 @@
 
 *.js                @centreon/owners-nodejs
 packag*.json        @centreon/owners-nodejs
+
+.gitleaks.toml      @centreon/owners-security
+.gitleaksignore     @centreon/owners-security
