@@ -5,3 +5,4 @@ packag*.json        @centreon/owners-nodejs
 
 .gitleaks.toml      @centreon/owners-security
 .gitleaksignore     @centreon/owners-security
+**/secu-*.yml       @centreon/owners-security
